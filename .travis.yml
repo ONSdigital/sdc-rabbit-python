@@ -6,7 +6,10 @@ python:
 sudo: required
 services:
   - rabbitmq
-install: make install
+install:
+  - make install
+  - pip install codecov
 script: make test
 after_success:
   - make dist
+  - codecov
