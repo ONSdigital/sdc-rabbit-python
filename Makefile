@@ -16,4 +16,4 @@ dist:
 test: depinstall
 	pip3 install -r test_requirements.txt
 	flake8 .
-	python -m unittest discover sdc
+	coverage run --branch --source=sdc.rabbit -m unittest sdc/rabbit/test/*.py
