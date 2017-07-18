@@ -103,7 +103,7 @@ class QueuePublisher(object):
                                             delivery_mode=2
                                         ),
                                         body=message)
-        except NackError as e:
+        except NackError:
             # raised when a message published in publisher-acknowledgments mode
             # is returned via `Basic.Return` followed by `Basic.Ack`.
             logger.error("NackError occured. Message not published.")
