@@ -108,7 +108,7 @@ class TestConsumer(unittest.TestCase):
                                                           self.body.encode('UTF-8'))
         self.assertEqual(result, None)
 
-        self.assertIn("event='Quarantinable error occured'", cm[0][0].message)
+        self.assertIn("Quarantinable error occured", cm[0][0].message)
 
     def test_on_message_publish_message_error(self):
         mock_reject_message = 'sdc.rabbit.AsyncConsumer.reject_message'
@@ -123,7 +123,7 @@ class TestConsumer(unittest.TestCase):
                                                               self.body.encode('UTF-8'))
         self.assertEqual(result, None)
 
-        expected_msg = "event='Unable to publish message to quarantine queue. Rejecting message and requeing.'"
+        expected_msg = "Unable to publish message to quarantine queue. Rejecting message and requeing."
         self.assertIn(expected_msg, cm[0][0].message)
 
     def test_on_message_bad_message_error(self):
@@ -136,7 +136,7 @@ class TestConsumer(unittest.TestCase):
                                                           self.body.encode('UTF-8'))
         self.assertEqual(result, None)
 
-        self.assertIn("event='Bad message'", cm[0][0].message)
+        self.assertIn("Bad message", cm[0][0].message)
 
     def test_on_message_retryable_message_error(self):
         mock_method = 'sdc.rabbit.AsyncConsumer.nack_message'
@@ -148,4 +148,4 @@ class TestConsumer(unittest.TestCase):
                                                           self.body.encode('UTF-8'))
         self.assertEqual(result, None)
 
-        self.assertIn("event='Failed to process'", cm[0][0].message)
+        self.assertIn("Failed to process", cm[0][0].message)
