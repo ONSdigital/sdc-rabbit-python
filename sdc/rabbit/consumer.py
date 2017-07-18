@@ -5,7 +5,7 @@ from structlog import wrap_logger
 from sdc.rabbit.exceptions import BadMessageError, RetryableError
 from sdc.rabbit.exceptions import PublishMessageError, QuarantinableError
 
-logger = wrap_logger(logging.getLogger('__name__'))
+logger = wrap_logger(logging.getLogger(__name__))
 
 
 class MessageConsumer():
@@ -132,7 +132,7 @@ class MessageConsumer():
                              delivery_count=delivery_count)
             except PublishMessageError as e:
                 logger.error("Unable to publish message to quarantine queue." +
-                             "Rejecting message and requeing.")
+                             " Rejecting message and requeing.")
                 self._consumer.reject_message(basic_deliver.delivery_tag,
                                               requeue=True,
                                               tx_id=tx_id)

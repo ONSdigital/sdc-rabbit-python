@@ -2,6 +2,9 @@ import logging
 
 from structlog import wrap_logger
 import pika
+from pika.exceptions import NackError, UnroutableError
+
+from sdc.rabbit.exceptions import PublishMessageError
 
 logger = wrap_logger(logging.getLogger('__name__'))
 
@@ -54,7 +57,9 @@ class QueuePublisher(object):
             except pika.exceptions.AMQPConnectionError as e:
                 logger.error("Unable to connect to queue",
                              exception=repr(e))
-                raise
+                continue
+
+        raise pika.exceptions.AMQPConnectionError
 
     def _disconnect(self):
         """
@@ -82,11 +87,12 @@ class QueuePublisher(object):
         :rtype: bool
 
         """
-        logger.debug("Sending message")
+        logger.debug("Publishing message")
         try:
             self._connect()
         except pika.exceptions.AMQPConnectionError:
-            return False
+            logger.error("Message not published. RetryableError raised")
+            raise PublishMessageError
 
         try:
             self._channel.basic_publish(exchange='',
@@ -97,13 +103,18 @@ class QueuePublisher(object):
                                             delivery_mode=2
                                         ),
                                         body=message)
-            logger.debug("Published message")
-
-        except pika.exceptions.ChannelClosed as e:
-            logger.error("No channel open", exception=repr(e))
-            return False
-        except Exception as e:
-            logger.error("Unable to publish message", exception=repr(e))
-            return False
-
-        return True
+        except NackError as e:
+            # raised when a message published in publisher-acknowledgments mode
+            # is returned via `Basic.Return` followed by `Basic.Ack`.
+            logger.error("NackError occured. Message not published.")
+            raise PublishMessageError
+        except UnroutableError:
+            # raised when a message published in publisher-acknowledgments
+            # mode is returned via `Basic.Return` followed by `Basic.Ack`.
+            logger.error("UnroutableError occured. Message not published.")
+            raise PublishMessageError
+        except Exception:
+            logger.error("Unknown exception occured. Message not published.")
+            raise PublishMessageError
+        msg = 'Published message to {} queue'
+        logger.error(msg.format(self._queue))

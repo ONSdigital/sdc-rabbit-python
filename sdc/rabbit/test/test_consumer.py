@@ -1,8 +1,11 @@
 import json
 import logging
 import unittest
+from unittest import mock
 
 from sdc.rabbit import AsyncConsumer, MessageConsumer, QueuePublisher
+from sdc.rabbit.exceptions import BadMessageError, RetryableError
+from sdc.rabbit.exceptions import PublishMessageError, QuarantinableError
 
 
 class DotDict(dict):
@@ -32,6 +35,12 @@ class TestConsumer(unittest.TestCase):
         self.basic_deliver = DotDict({'delivery_tag': 'test'})
         self.body = json.loads('"{test message}"')
 
+    def test_callable(self):
+        with self.assertRaises(AttributeError):
+            self.consumer = MessageConsumer(self.consumer,
+                                            self.quarantine_publisher,
+                                            self.body)
+
     def test_queue_attributes(self):
         self.assertEqual(self.message_consumer._consumer._exchange, '/')
         self.assertEqual(self.message_consumer._consumer._exchange_type, 'topic')
@@ -59,3 +68,84 @@ class TestConsumer(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.message_consumer.delivery_count(
                 self.props_no_x_delivery_count)
+
+    def test_on_message_delivery_count_key_error_returns_none(self):
+        mock_method = 'sdc.rabbit.async_consumer.AsyncConsumer.reject_message'
+        with mock.patch(mock_method) as barMock:
+            barMock.return_value = None
+            result = self.message_consumer.on_message(self.basic_deliver,
+                                                      self.props_no_x_delivery_count,
+                                                      'test')
+
+        self.assertEqual(result, None)
+
+    def test_on_message_txid_key_error_returns_none(self):
+        mock_method = 'sdc.rabbit.async_consumer.AsyncConsumer.reject_message'
+        with mock.patch(mock_method) as barMock:
+            barMock.return_value = None
+            result = self.message_consumer.on_message(self.basic_deliver,
+                                                      self.props_no_tx_id,
+                                                      'test')
+
+        self.assertEqual(result, None)
+
+    def test_on_message_logger(self):
+        mock_method = 'sdc.rabbit.AsyncConsumer.acknowledge_message'
+        with mock.patch(mock_method) as bar_mock:
+            bar_mock.return_value = None
+            result = self.message_consumer.on_message(self.basic_deliver,
+                                                      self.props,
+                                                      self.body.encode('UTF-8'))
+            self.assertEqual(None, result)
+
+    def test_on_message_quarantinable_error(self):
+        mock_method = 'sdc.rabbit.AsyncConsumer.reject_message'
+        with mock.patch(mock_method):
+            self.message_consumer._process = lambda x: (_ for _ in ()).throw(QuarantinableError())
+            with self.assertLogs(logger='sdc.rabbit.consumer', level='ERROR') as cm:
+                result = self.message_consumer.on_message(self.basic_deliver,
+                                                          self.props,
+                                                          self.body.encode('UTF-8'))
+        self.assertEqual(result, None)
+
+        self.assertIn("event='Quarantinable error occured'", cm[0][0].message)
+
+    def test_on_message_publish_message_error(self):
+        mock_reject_message = 'sdc.rabbit.AsyncConsumer.reject_message'
+        mock_publish_message = 'sdc.rabbit.QueuePublisher.publish_message'
+        with mock.patch(mock_reject_message):
+            self.message_consumer._process = lambda x: (_ for _ in ()).throw(QuarantinableError())
+            with mock.patch(mock_publish_message) as publish_mock:
+                publish_mock.side_effect = PublishMessageError
+                with self.assertLogs(logger='sdc.rabbit.consumer', level='ERROR') as cm:
+                    result = self.message_consumer.on_message(self.basic_deliver,
+                                                              self.props,
+                                                              self.body.encode('UTF-8'))
+        self.assertEqual(result, None)
+
+        expected_msg = "event='Unable to publish message to quarantine queue. Rejecting message and requeing.'"
+        self.assertIn(expected_msg, cm[0][0].message)
+
+    def test_on_message_bad_message_error(self):
+        mock_method = 'sdc.rabbit.AsyncConsumer.reject_message'
+        with mock.patch(mock_method):
+            self.message_consumer._process = lambda x: (_ for _ in ()).throw(BadMessageError)
+            with self.assertLogs(logger='sdc.rabbit.consumer', level='ERROR') as cm:
+                result = self.message_consumer.on_message(self.basic_deliver,
+                                                          self.props,
+                                                          self.body.encode('UTF-8'))
+        self.assertEqual(result, None)
+
+        self.assertIn("event='Bad message'", cm[0][0].message)
+
+    def test_on_message_retryable_message_error(self):
+        mock_method = 'sdc.rabbit.AsyncConsumer.nack_message'
+        with mock.patch(mock_method):
+            self.message_consumer._process = lambda x: (_ for _ in ()).throw(RetryableError)
+            with self.assertLogs(logger='sdc.rabbit.consumer', level='ERROR') as cm:
+                result = self.message_consumer.on_message(self.basic_deliver,
+                                                          self.props,
+                                                          self.body.encode('UTF-8'))
+        self.assertEqual(result, None)
+
+        self.assertIn("event='Failed to process'", cm[0][0].message)
