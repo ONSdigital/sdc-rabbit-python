@@ -1,18 +1,18 @@
-# sdc-rabbit-python
+# sdc-rabbit
 
-[![Build Status](https://travis-ci.org/ONSdigital/sdc-rabbit-python.svg?branch=master)](https://travis-ci.org/ONSdigital/sdc-rabbit-python) 
-[![codecov](https://codecov.io/gh/ONSdigital/sdc-rabbit-python/branch/master/graph/badge.svg)](https://codecov.io/gh/ONSdigital/sdc-rabbit-python)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/043810e79dac47759cc661361a8af12b)](https://www.codacy.com/app/ONS/sdc-rabbit-python?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ONSdigital/sdc-rabbit-python&amp;utm_campaign=Badge_Grade)
+[![Build Status](https://travis-ci.org/ONSdigital/sdc-rabbit.svg?branch=master)](https://travis-ci.org/ONSdigital/sdc-rabbit) 
+[![codecov](https://codecov.io/gh/ONSdigital/sdc-rabbit/branch/master/graph/badge.svg)](https://codecov.io/gh/ONSdigital/sdc-rabbit)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/043810e79dac47759cc661361a8af12b)](https://www.codacy.com/app/ONS/sdc-rabbit?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ONSdigital/sdc-rabbit&amp;utm_campaign=Badge_Grade)
 
 Common code for SDC Pika-based services that interact with RabbitMQ.
 
-## sdc-rabbit-python
+## sdc-rabbit
 
 A common source code library for SDC apps that use Pika to interact with RabbitMQ.
 Apps wishing to use this service should use pip's VCS aware install method::
 
 ```Shell
-    $ pip install git+git://github.com/ONSDigital/sdc-rabbit-python.git@master
+    $ pip install git+git://github.com/ONSDigital/sdc-rabbit.git@master
 ```
 
 For production deployments a tag should be referenced, rather than master.

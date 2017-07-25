@@ -5,7 +5,7 @@ all: install test
 
 clean:
 	rm -rf sdc/rabbit/doc/html
-	rm -v dist/sdc-rabbit-python-*.tar.gz
+	rm -v dist/sdc-rabbit-*.tar.gz
 
 install:
 	pip3 install -r requirements.txt
