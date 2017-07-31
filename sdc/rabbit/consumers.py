@@ -7,6 +7,7 @@ from structlog import wrap_logger
 from sdc.rabbit.exceptions import BadMessageError, RetryableError
 from sdc.rabbit.exceptions import PublishMessageError, QuarantinableError
 
+logging.basicConfig()
 logger = wrap_logger(logging.getLogger('__name__'))
 
 

@@ -6,6 +6,7 @@ from pika.exceptions import NackError, UnroutableError
 
 from sdc.rabbit.exceptions import PublishMessageError
 
+logging.basicConfig(level=logging.INFO)
 logger = wrap_logger(logging.getLogger('__name__'))
 
 
