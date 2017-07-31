@@ -11,12 +11,14 @@ install:
 - pip install codecov
 script: make test
 deploy:
-  matrix:
   - provider: pypi
     distributions: sdist bdist_wheel
     user: ons.digital
     password:
       secure: cz+S8eJ/mdH1WwJbkHmrnAqbvCJjuSCP9WMuS+7+5xo6PrM1GplAKtP3EnNUk06TMRH1DHaTl4oZdeBODRmDPBUY9Jv2GsjGY8rK1dAUp+G2bxAY9j56ievRiTxCgHMIgwxPyVSGoJvd6lEvNta9ZK37TAXSlSgyBUy6E/BpvVTUxuldgupiDagTVTgcHs0iQlULTElRd9/lNL+tbD/ak+M5c6o4sbOsB/WAxHGB138nN5AJRi3eIheLnxf1reYCMNJN1UrvE8EN5A1ZJWTvoF6FcDsbav3cD2S6/jh/IWkLOCoiqVmHXZ8IxZtH9S1WB5I1o+bVotPhep79P0Jla32S5P8TnJiRyeIbW5qvIauzuD2hI4S1fCT4qG+Qi5ceHupudPM8+vimgZ4HnCrvplUzvqn4wEaxZ2ejeowLrCTThk0diGE5TY5keZ8DCdFj9/4aLPeWeKBgXRFvq12x95yv63guKDlQ2SY8CZpFpMbz3opcwiyxDVyyyW+w7a+yywlvjGx4rosL3OG3Zgh7HgS78tU4vg+BRgmTDQQ2lvWi4EnafVUgCpmEBlR+BTcfvnkZzj79/OqMwAmZvWrshxvabBEYI3Xburl98djOQcFv+SfPholGYprXbERhPfOTBIU0SwJlpjctjU/umwHyg12ycBjQ9gqNEjEnSZyjg0U=
+    on:
+        tags: true
+        python: 3.6
 after_success:
 - make dist
 - codecov
