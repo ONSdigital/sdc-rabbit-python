@@ -28,7 +28,7 @@ class TestSdxConsumer(unittest.TestCase):
                                         'test',
                                         [self.amqp_url],
                                         self.quarantine_publisher,
-                                        lambda x: True)
+                                        lambda x, y: True)
 
         self.props = DotDict({'headers': {'tx_id': 'test',
                                           'x-delivery-count': 0}})
@@ -117,7 +117,7 @@ class TestSdxConsumer(unittest.TestCase):
                                                   self.props,
                                                   self.body.encode('UTF-8'))
         self.assertEqual(result, None)
-        self.assertIn("Quarantinable error occured", cm[0][1].message)
+        self.assertIn("Quarantinable error occured", cm[0][2].message)
 
     def test_on_message_publish_message_error(self):
         mock_reject_message = 'sdc.rabbit.AsyncConsumer.reject_message'
@@ -134,12 +134,16 @@ class TestSdxConsumer(unittest.TestCase):
         self.assertEqual(result, None)
 
         expected_msg = "Unable to publish message to quarantine queue. Rejecting message and requeing."
-        self.assertIn(expected_msg, cm[0][0].message)
+        self.assertIn(expected_msg, cm[0][1].message)
 
     def test_on_message_bad_message_error(self):
         mock_method = 'sdc.rabbit.AsyncConsumer.reject_message'
+
+        def bad_message_error(x, y):
+            raise BadMessageError
+
         with mock.patch(mock_method):
-            self.consumer.process = lambda x: (_ for _ in ()).throw(BadMessageError)
+            self.consumer.process = bad_message_error
             with self.assertLogs(level='ERROR') as cm:
                 result = self.consumer.on_message(self.consumer._channel,
                                                   self.basic_deliver,
@@ -150,8 +154,12 @@ class TestSdxConsumer(unittest.TestCase):
 
     def test_on_message_retryable_message_error(self):
         mock_method = 'sdc.rabbit.AsyncConsumer.nack_message'
+
+        def retryable_error(x, y):
+            raise RetryableError
+
         with mock.patch(mock_method):
-            self.consumer.process = lambda x: (_ for _ in ()).throw(RetryableError)
+            self.consumer.process = retryable_error
             with self.assertLogs(level='ERROR') as cm:
                 result = self.consumer.on_message(self.consumer._channel,
                                                   self.basic_deliver,
