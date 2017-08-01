@@ -417,9 +417,9 @@ class TornadoConsumer(AsyncConsumer):
 
             try:
                 logger.info('Connecting', attempt=count)
-                return pika.TornadoConnection(pika.URLParameters(self._url),
-                                              self.on_connection_open,
-                                              stop_ioloop_on_close=False)
+                return pika.adapters.tornado_connection.TornadoConnection(pika.URLParameters(self._url),
+                                                                          self.on_connection_open,
+                                                                          stop_ioloop_on_close=False)
             except pika.exceptions.AMQPConnectionError as e:
                 logger.error("Connection error", exception=e)
                 count += 1
@@ -561,7 +561,13 @@ class MessageConsumer(TornadoConsumer):
                          delivery_tag=basic_deliver.delivery_tag)
 
         try:
-            self.process(body.decode("utf-8"))
+
+            try:
+                self.process(body.decode("utf-8"), tx_id)
+            except TypeError:
+                logger.error('Incorrect call to process method')
+                raise QuarantinableError
+
             self.acknowledge_message(basic_deliver.delivery_tag,
                                      tx_id=tx_id)
 
