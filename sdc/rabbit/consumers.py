@@ -559,6 +559,7 @@ class MessageConsumer(TornadoConsumer):
         else:
             logger.debug("check_tx_id is False. Not checking tx_id for message.",
                          delivery_tag=basic_deliver.delivery_tag)
+            tx_id = None
 
         try:
 
