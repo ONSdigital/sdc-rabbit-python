@@ -441,22 +441,6 @@ class MessageConsumer(TornadoConsumer):
     raised.
 
     """
-    @staticmethod
-    def delivery_count(properties):
-        """
-        Returns the delivery count for a message from the rabbit queue. The
-        value is auto-set by rabbitmq. Will raise KeyError if x-delivery-count
-        is missing from message headers.
-
-
-        :param properties: Message properties
-
-        :returns: Delivery count value
-        :rtype: int
-
-        """
-        delivery_count = properties.headers['x-delivery-count']
-        return delivery_count + 1
 
     @staticmethod
     def tx_id(properties):
@@ -530,14 +514,6 @@ class MessageConsumer(TornadoConsumer):
         : returns: None
 
         """
-        try:
-            delivery_count = self.delivery_count(properties)
-        except KeyError as e:
-            self.reject_message(basic_deliver.delivery_tag)
-            msg = 'Bad message properties - no delivery count'
-            logger.error(msg, action="rejected", exception=str(e))
-            return None
-
         if self.check_tx_id:
             try:
                 tx_id = self.tx_id(properties)
@@ -545,7 +521,6 @@ class MessageConsumer(TornadoConsumer):
                 logger.info('Received message',
                             queue=self._queue,
                             delivery_tag=basic_deliver.delivery_tag,
-                            delivery_count=delivery_count,
                             app_id=properties.app_id,
                             tx_id=tx_id)
 
@@ -553,8 +528,7 @@ class MessageConsumer(TornadoConsumer):
                 self.reject_message(basic_deliver.delivery_tag)
                 logger.error("Bad message properties - no tx_id",
                              action="rejected",
-                             exception=str(e),
-                             delivery_count=delivery_count)
+                             exception=str(e))
                 return None
         else:
             logger.debug("check_tx_id is False. Not checking tx_id for message.",
@@ -580,8 +554,7 @@ class MessageConsumer(TornadoConsumer):
                 logger.error("Quarantinable error occured",
                              action="quarantined",
                              exception=str(e),
-                             tx_id=tx_id,
-                             delivery_count=delivery_count)
+                             tx_id=tx_id)
             except PublishMessageError as e:
                 logger.error("Unable to publish message to quarantine queue." +
                              " Rejecting message and requeing.")
@@ -595,13 +568,11 @@ class MessageConsumer(TornadoConsumer):
             logger.error("Bad message",
                          action="rejected",
                          exception=str(e),
-                         tx_id=tx_id,
-                         delivery_count=delivery_count)
+                         tx_id=tx_id)
 
         except RetryableError as e:
             self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
             logger.error("Failed to process",
                          action="nack",
                          exception=str(e),
-                         tx_id=tx_id,
-                         delivery_count=delivery_count)
+                         tx_id=tx_id)
