@@ -1,5 +1,8 @@
 ### Unreleased
 
+### 0.3.2
+- Remove x-delivery-count checking
+
 ### 0.3.1
 - Add tornado to requirements file
 - Pass tx_id in call to process method
