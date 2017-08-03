@@ -1,5 +1,8 @@
 ### Unreleased
 
+### 0.3.3
+- Remove call to `logging.basicConfig`
+
 ### 0.3.2
 - Remove x-delivery-count checking
 
