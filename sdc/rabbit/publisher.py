@@ -6,7 +6,6 @@ from structlog import wrap_logger
 
 from sdc.rabbit.exceptions import PublishMessageError
 
-logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger = wrap_logger(logger)
 
