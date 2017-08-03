@@ -30,9 +30,8 @@ class TestSdxConsumer(unittest.TestCase):
                                         self.quarantine_publisher,
                                         lambda x, y: True)
 
-        self.props = DotDict({'headers': {'tx_id': 'test',
-                                          'x-delivery-count': 0}})
-        self.props_no_tx_id = DotDict({'headers': {'x-delivery-count': 0}})
+        self.props = DotDict({'headers': {'tx_id': 'test'}})
+        self.props_no_tx_id = DotDict({'headers': {}})
         self.props_no_x_delivery_count = DotDict({'headers': {'tx_id': 'test'}})
         self.basic_deliver = DotDict({'delivery_tag': 'test'})
         self.body = json.loads('"{test message}"')
@@ -65,26 +64,6 @@ class TestSdxConsumer(unittest.TestCase):
 
         with self.assertRaises(KeyError):
             self.consumer.tx_id(self.props_no_tx_id)
-
-    def test_delivery_count(self):
-        count = self.consumer.delivery_count(self.props)
-        self.assertEqual(count, 1)
-
-    def test_delivery_count_no_header(self):
-        with self.assertRaises(KeyError):
-            self.consumer.delivery_count(
-                self.props_no_x_delivery_count)
-
-    def test_on_message_delivery_count_key_error_returns_none(self):
-        mock_method = 'sdc.rabbit.AsyncConsumer.reject_message'
-        with mock.patch(mock_method) as barMock:
-            barMock.return_value = None
-            result = self.consumer.on_message(self.consumer._channel,
-                                              self.basic_deliver,
-                                              self.props_no_x_delivery_count,
-                                              'test')
-
-        self.assertEqual(result, None)
 
     def test_on_message_txid_key_error_returns_none(self):
         mock_method = 'sdc.rabbit.AsyncConsumer.reject_message'
