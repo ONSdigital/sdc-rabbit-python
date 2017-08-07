@@ -38,9 +38,9 @@ Assuming you are executing from inside an activated virtual environment:
     $ make docs
 
 
-###### PyPi
+## PyPi
 
 This repo is available in PyPi at [sdc-rabbit](https://pypi.python.org/pypi/sdc-rabbit)
 
 The package is published automatically to PyPi when a tag is created in Github. The configuration for this is in the
-.travis.yml file.
+[.travis.yml](.travis.yml) file.
