@@ -139,10 +139,9 @@ class AsyncConsumer:
         if not self._closing:
 
             # Create a new connection
+            # The ioloop may be stopped in self._connection._handle_ioloop_stop()
+            # depending on the value of 'stop_ioloop_on_close'
             self._connection = self.connect()
-
-            # There is now a new connection, needs a new ioloop to run
-            self._connection.ioloop.start()
 
     def add_on_channel_close_callback(self):
         """This method tells pika to call the on_channel_closed method if
