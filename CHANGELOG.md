@@ -1,5 +1,8 @@
 ### Unreleased
 
+### 0.3.4
+- Remove call to ioloop.stop in reconnect handler.
+
 ### 0.3.3
 - Remove call to `logging.basicConfig`
 
