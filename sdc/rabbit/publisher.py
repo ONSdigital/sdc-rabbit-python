@@ -113,8 +113,8 @@ class QueuePublisher(object):
                                                      delivery_mode=2
                                                  ),
                                                  body=message)
-            msg = 'Published message to {} queue'
-            logger.info(msg.format(self._queue))
+
+            logger.info('Published message to queue', queue=self._queue)
             return result
         except NackError:
             # raised when a message published in publisher-acknowledgments mode
