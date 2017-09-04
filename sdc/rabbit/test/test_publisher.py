@@ -20,6 +20,11 @@ class TestPublisher(unittest.TestCase):
                                     'amqp://guest:guest@0.0.0.0:672'],
                                    'test')
 
+    confirm_delivery_publisher = QueuePublisher(['amqp://guest:guest@0.0.0.0:5672',
+                                                 'amqp://guest:guest@0.0.0.0:5672'],
+                                                'test',
+                                                confirm_delivery=True)
+
     def test_init(self):
         this_publisher = QueuePublisher(['amqp://guest:guest@0.0.0.0:5672',
                                          'amqp://guest:guest@0.0.0.0:5672'],
@@ -48,6 +53,13 @@ class TestPublisher(unittest.TestCase):
     def test_connect_amqp_connection_error(self):
         with self.assertRaises(AMQPConnectionError):
             self.bad_publisher._connect()
+
+    def test_connect_confirm_delivery_true(self):
+        with self.assertLogs(level='INFO') as cm:
+            self.confirm_delivery_publisher._connect()
+
+        msg = 'Enabled delivery confirmation'
+        self.assertIn(msg, cm[0][3].msg)
 
     def test_connect_amqpok(self):
 

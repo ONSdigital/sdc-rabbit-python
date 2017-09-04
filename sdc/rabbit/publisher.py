@@ -55,8 +55,8 @@ class QueuePublisher(object):
                                             durable=self._durable_queue,
                                             arguments=self._arguments)
                 if self.confirm_delivery:
-                    logger.debug("Confirming delivery")
                     self._channel.confirm_delivery()
+                    logger.info("Enabled delivery confirmation")
                 logger.debug("Connected to queue")
                 return True
 
