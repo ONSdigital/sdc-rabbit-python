@@ -96,7 +96,7 @@ class TestSdxConsumer(unittest.TestCase):
                                                   self.props,
                                                   self.body.encode('UTF-8'))
         self.assertEqual(result, None)
-        self.assertIn("Quarantinable error occured", cm[0][2].message)
+        self.assertIn("Quarantinable error occured", cm[0][1].message)
 
     def test_on_message_publish_message_error(self):
         mock_reject_message = 'sdc.rabbit.AsyncConsumer.reject_message'

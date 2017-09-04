@@ -79,7 +79,7 @@ class TestPublisher(unittest.TestCase):
     def test_publish(self):
         self.publisher._connect()
         result = self.publisher.publish_message(test_data['valid'])
-        self.assertEqual(None, result)
+        self.assertEqual(True, result)
 
     def test_publish_nack_error(self):
         mock_method = 'pika.adapters.blocking_connection.BlockingChannel.basic_publish'
