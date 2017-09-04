@@ -17,7 +17,7 @@ class QueuePublisher(object):
     """
     _durable_queue = True
 
-    def __init__(self, urls, queue, confirm_delivery=False, **kwargs):
+    def __init__(self, urls, queue, **kwargs):
         """Create a new instance of the QueuePublisher class
 
         :param logger: A reference to a logging.Logger instance
@@ -36,7 +36,10 @@ class QueuePublisher(object):
         self._arguments = kwargs
         self._connection = None
         self._channel = None
-        self.confirm_delivery = confirm_delivery
+        self._confirm_delivery = False
+        if 'confirm_delivery' in kwargs:
+            self._confirm_delivery = True
+            self._arguments.pop('confirm_delivery', None)
 
     def _connect(self):
         """
@@ -54,7 +57,7 @@ class QueuePublisher(object):
                 self._channel.queue_declare(queue=self._queue,
                                             durable=self._durable_queue,
                                             arguments=self._arguments)
-                if self.confirm_delivery:
+                if self._confirm_delivery:
                     self._channel.confirm_delivery()
                     logger.info("Enabled delivery confirmation")
                 logger.debug("Connected to queue")
