@@ -1,4 +1,6 @@
 ### Unreleased
+- Add configurable mandatory and immediate flags for basic publish
+- Add configurable delivery confirmation for channel
 
 ### 1.0.0 2017-08-30
 - Stabilised API
