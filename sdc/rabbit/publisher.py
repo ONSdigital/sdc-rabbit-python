@@ -2,12 +2,10 @@ import logging
 
 import pika
 from pika.exceptions import NackError, UnroutableError
-from structlog import wrap_logger
 
 from sdc.rabbit.exceptions import PublishMessageError
 
 logger = logging.getLogger(__name__)
-logger = wrap_logger(logger)
 
 
 class QueuePublisher(object):
@@ -63,9 +61,8 @@ class QueuePublisher(object):
                 logger.debug("Connected to queue")
                 return True
 
-            except pika.exceptions.AMQPConnectionError as e:
-                logger.error("Unable to connect to queue",
-                             exception=repr(e))
+            except pika.exceptions.AMQPConnectionError:
+                logger.exception("Unable to connect to queue")
                 continue
 
         raise pika.exceptions.AMQPConnectionError
@@ -81,8 +78,8 @@ class QueuePublisher(object):
             self._connection.close()
             logger.debug("Disconnected from queue")
 
-        except Exception as e:
-            logger.error("Unable to close connection", exception=repr(e))
+        except Exception:
+            logger.exception("Unable to close connection")
 
     def publish_message(self, message, content_type=None, headers=None, mandatory=False, immediate=False):
         """
@@ -130,5 +127,5 @@ class QueuePublisher(object):
             logger.error("UnroutableError occured. Message not published.")
             raise PublishMessageError
         except Exception:
-            logger.error("Unknown exception occured. Message not published.")
+            logger.exception("Unknown exception occured. Message not published.")
             raise PublishMessageError
