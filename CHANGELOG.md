@@ -1,3 +1,5 @@
+### Unreleased
+- Better exception handling of TypeErrors in consumer module when the `headers` attribute was not set in a message's properties.
 
 ### 1.0.2 2017-09-07
 - Bug fix release. Removes an issue where an additional keyword argument was being passed to the logger, causing an exception.
