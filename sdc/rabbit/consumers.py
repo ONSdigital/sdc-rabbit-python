@@ -453,9 +453,9 @@ class MessageConsumer(TornadoConsumer):
         : returns: tx_id of survey response
         : rtype: str
         """
-        tx = properties.headers['tx_id']
-        logger.info("Retrieved tx_id from message properties: tx_id={}".format(tx))
-        return tx
+        tx_id = properties.headers['tx_id']
+        logger.info("Retrieved tx_id from message properties: tx_id={}".format(tx_id))
+        return tx_id
 
     def __init__(self,
                  durable_queue,
@@ -529,13 +529,18 @@ class MessageConsumer(TornadoConsumer):
                              action="rejected",
                              exception=str(e))
                 return None
+            except TypeError as e:
+                self.reject_message(basic_deliver.delivery_tag)
+                logger.error("Bad message properties - no headers",
+                             action="rejected",
+                             exception=str(e))
+                return None
         else:
             logger.debug("check_tx_id is False. Not checking tx_id for message.",
                          delivery_tag=basic_deliver.delivery_tag)
             tx_id = None
 
         try:
-
             try:
                 self.process(body.decode("utf-8"), tx_id)
             except TypeError:

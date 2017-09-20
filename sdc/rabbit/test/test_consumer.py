@@ -32,6 +32,7 @@ class TestSdxConsumer(unittest.TestCase):
 
         self.props = DotDict({'headers': {'tx_id': 'test'}})
         self.props_no_tx_id = DotDict({'headers': {}})
+        self.props_no_headers = DotDict({})
         self.props_no_x_delivery_count = DotDict({'headers': {'tx_id': 'test'}})
         self.basic_deliver = DotDict({'delivery_tag': 'test'})
         self.body = json.loads('"{test message}"')
@@ -65,6 +66,9 @@ class TestSdxConsumer(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.consumer.tx_id(self.props_no_tx_id)
 
+        with self.assertRaises(TypeError):
+            self.consumer.tx_id(self.props_no_headers)
+
     def test_on_message_txid_key_error_returns_none(self):
         mock_method = 'sdc.rabbit.AsyncConsumer.reject_message'
         with mock.patch(mock_method) as barMock:
@@ -73,6 +77,17 @@ class TestSdxConsumer(unittest.TestCase):
                                               self.basic_deliver,
                                               self.props_no_tx_id,
                                               'test')
+
+        self.assertEqual(result, None)
+
+    def test_on_message_headers_type_error_returns_none(self):
+        mock_method = 'sdc.rabbit.AsyncConsumer.reject_message'
+        with mock.patch(mock_method) as barMock:
+            barMock.return_value = None
+            result = self.consumer.on_message(self.consumer._channel,
+                                              self.basic_deliver,
+                                              self.props_no_headers,
+                                              'test'.encode())
 
         self.assertEqual(result, None)
 
