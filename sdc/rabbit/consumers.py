@@ -248,7 +248,7 @@ class AsyncConsumer:
         :param pika.frame.Method method_frame: The Basic.Cancel frame
 
         """
-        msg = 'Consumer was cancelled remotely, shutting down: {0!r]'
+        msg = 'Consumer was cancelled remotely, shutting down: {0!r}'
         logger.info(msg.format(method_frame))
         if self._channel:
             self._channel.close()

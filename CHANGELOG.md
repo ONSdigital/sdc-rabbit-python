@@ -1,4 +1,5 @@
 ### Unreleased
+- Fix typo in log line in consumer module
 - Do not restart ioloop if stop method is called on consumer
 - Better exception handling of TypeErrors in consumer module when the `headers` attribute was not set in a message's properties.
 
