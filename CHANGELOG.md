@@ -1,6 +1,9 @@
 ### Unreleased
 
-### 1.0.2 2017-10-27
+### 1.2.0 2017-10-30
+ - Log exceptions using `logging.Logger.exception` method in consumer module
+
+### 1.1.0 2017-10-27
 - Fix typo in log line in consumer module
 - Do not restart ioloop if stop method is called on consumer
 - Better exception handling of TypeErrors in consumer module when the `headers` attribute was not set in a message's properties.
