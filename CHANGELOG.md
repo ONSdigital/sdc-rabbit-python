@@ -1,4 +1,6 @@
-### Unreleased
+### 1.3.0 2018-01-04
+ - Additional exception handling in on_message of consumer
+ - Update Pika to 0.11.2
 
 ### 1.2.1 2017-12-15
  - Copy message headers to the quarantine queue and quarantine rather than reject bad messages
