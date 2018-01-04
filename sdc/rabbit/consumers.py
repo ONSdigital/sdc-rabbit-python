@@ -571,3 +571,11 @@ class MessageConsumer(TornadoConsumer):
                          action="nack",
                          exception=str(e),
                          tx_id=tx_id)
+
+        except Exception as e:
+            self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
+            logger.exception("Unexpected exception occurred")
+            logger.error("Failed to process",
+                         action="nack",
+                         exception=str(e),
+                         tx_id=tx_id)
