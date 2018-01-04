@@ -162,3 +162,22 @@ class TestSdxConsumer(unittest.TestCase):
         self.assertEqual(result, None)
 
         self.assertIn("Failed to process", cm[0][0].message)
+
+    def test_on_message_generic_exception_caught_and_nacked(self):
+        mock_method = 'sdc.rabbit.AsyncConsumer.nack_message'
+
+        def exception_error(x, y):
+            raise Exception
+
+        with mock.patch(mock_method) as mocker:
+            self.consumer.process = exception_error
+            with self.assertLogs(level='ERROR') as cm:
+                result = self.consumer.on_message(self.consumer._channel,
+                                                  self.basic_deliver,
+                                                  self.props,
+                                                  self.body.encode('UTF-8'))
+            self.assertEqual(result, None)
+            mocker.assert_called_with(self.basic_deliver.delivery_tag,
+                                      tx_id='test')
+
+            self.assertIn("Unexpected exception occurred", cm[0][0].message)

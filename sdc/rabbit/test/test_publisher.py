@@ -75,13 +75,13 @@ class TestPublisher(unittest.TestCase):
         msg = 'Disconnected from queue'
         self.assertIn(msg, cm[1][-1])
 
-    def test_disconnect_error(self):
-
+    def test_disconnect_already_closed_connection(self):
+        self.publisher._connect()
         self.publisher._disconnect()
-        with self.assertLogs(level='ERROR') as cm:
+        with self.assertLogs(level='DEBUG') as cm:
             self.publisher._disconnect()
 
-        msg = 'Unable to close connection'
+        msg = 'Close called on closed connection'
         self.assertIn(msg, cm.output[0])
 
     def test_publish_message_no_connection(self):
