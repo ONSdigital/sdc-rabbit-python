@@ -13,34 +13,34 @@ class TestPublisher(unittest.TestCase):
     logger = logging.getLogger(__name__)
 
     q_publisher = QueuePublisher(['amqp://guest:guest@0.0.0.0:5672',
-                                'amqp://guest:guest@0.0.0.0:5672'],
-                               'test')
+                                 'amqp://guest:guest@0.0.0.0:5672'],
+                                 'test')
 
     bad_q_publisher = QueuePublisher(['amqp://guest:guest@0.0.0.0:672',
-                                    'amqp://guest:guest@0.0.0.0:672'],
-                                   'test')
+                                     'amqp://guest:guest@0.0.0.0:672'],
+                                     'test')
 
     confirm_delivery_q_publisher = QueuePublisher(['amqp://guest:guest@0.0.0.0:5672',
-                                                 'amqp://guest:guest@0.0.0.0:5672'],
-                                                'test',
-                                                confirm_delivery=True)
+                                                  'amqp://guest:guest@0.0.0.0:5672'],
+                                                  'test',
+                                                  confirm_delivery=True)
 
     x_publisher = ExchangePublisher(['amqp://guest:guest@0.0.0.0:5672',
-                                'amqp://guest:guest@0.0.0.0:5672'],
-                               'test')
+                                    'amqp://guest:guest@0.0.0.0:5672'],
+                                    'test')
 
     bad_x_publisher = ExchangePublisher(['amqp://guest:guest@0.0.0.0:672',
-                                    'amqp://guest:guest@0.0.0.0:672'],
-                                   'test')
+                                        'amqp://guest:guest@0.0.0.0:672'],
+                                        'test')
 
     confirm_delivery_x_publisher = ExchangePublisher(['amqp://guest:guest@0.0.0.0:5672',
-                                                 'amqp://guest:guest@0.0.0.0:5672'],
-                                                'test',
-                                                confirm_delivery=True)
+                                                     'amqp://guest:guest@0.0.0.0:5672'],
+                                                     'test',
+                                                     confirm_delivery=True)
 
     def test_queue_init(self):
         this_publisher = QueuePublisher(['amqp://guest:guest@0.0.0.0:5672',
-                                         'amqp://guest:guest@0.0.0.0:5672'],
+                                        'amqp://guest:guest@0.0.0.0:5672'],
                                         'test')
         self.assertEqual(this_publisher._urls, ['amqp://guest:guest@0.0.0.0:5672',
                                                 'amqp://guest:guest@0.0.0.0:5672'])
@@ -51,8 +51,8 @@ class TestPublisher(unittest.TestCase):
 
     def test_exchange_init(self):
         this_publisher = ExchangePublisher(['amqp://guest:guest@0.0.0.0:5672',
-                                         'amqp://guest:guest@0.0.0.0:5672'],
-                                        'test')
+                                           'amqp://guest:guest@0.0.0.0:5672'],
+                                           'test')
         self.assertEqual(this_publisher._urls, ['amqp://guest:guest@0.0.0.0:5672',
                                                 'amqp://guest:guest@0.0.0.0:5672'])
         self.assertEqual(this_publisher._exchange, 'test')
@@ -62,7 +62,7 @@ class TestPublisher(unittest.TestCase):
 
     def test_queue_connect_loops_correctly(self):
         this_publisher = QueuePublisher(['amqp://guest:guest@0.0.0.0:672',
-                                         'amqp://guest:guest@0.0.0.0:5672'],
+                                        'amqp://guest:guest@0.0.0.0:5672'],
                                         'test')
 
         self.assertEqual(this_publisher._urls, ['amqp://guest:guest@0.0.0.0:672',
@@ -76,8 +76,8 @@ class TestPublisher(unittest.TestCase):
 
     def test_exchange_connect_loops_correctly(self):
         this_publisher = ExchangePublisher(['amqp://guest:guest@0.0.0.0:672',
-                                         'amqp://guest:guest@0.0.0.0:5672'],
-                                        'test')
+                                           'amqp://guest:guest@0.0.0.0:5672'],
+                                           'test')
 
         self.assertEqual(this_publisher._urls, ['amqp://guest:guest@0.0.0.0:672',
                                                 'amqp://guest:guest@0.0.0.0:5672'])

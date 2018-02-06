@@ -52,8 +52,8 @@ class ExchangePublisher(object):
                 self._connection = pika.BlockingConnection(pika.URLParameters(url))
                 self._channel = self._connection.channel()
                 self._channel.exchange_declare(exchange=self._exchange,
-                                            exchange_type=self._exchange_type,
-                                            arguments=self._arguments)
+                                               exchange_type=self._exchange_type,
+                                               arguments=self._arguments)
                 if self._confirm_delivery:
                     self._channel.confirm_delivery()
                     logger.info("Enabled delivery confirmation")
@@ -129,7 +129,6 @@ class ExchangePublisher(object):
         except Exception:
             logger.exception("Unknown exception occurred. Message not published.")
             raise PublishMessageError
-
 
 
 class QueuePublisher(object):
