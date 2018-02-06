@@ -133,7 +133,7 @@ class TestPublisher(unittest.TestCase):
         with self.assertLogs(level='DEBUG') as cm:
             self.x_publisher._disconnect()
 
-        msg = 'Disconnected from queue'
+        msg = 'Disconnected from exchange'
         self.assertIn(msg, cm[1][-1])
 
     def test_queue_disconnect_already_closed_connection(self):
@@ -198,7 +198,7 @@ class TestPublisher(unittest.TestCase):
         with self.assertLogs(level='INFO') as cm:
             result = self.x_publisher.publish_message(test_data['valid'])
             self.assertEqual(True, result)
-        self.assertIn('Published message to queue', cm.output[3])
+        self.assertIn('Published message to exchange', cm.output[3])
 
     def test_exchange_publish_nack_error(self):
         mock_method = 'pika.adapters.blocking_connection.BlockingChannel.basic_publish'
