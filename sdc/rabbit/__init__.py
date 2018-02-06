@@ -2,7 +2,7 @@ import logging
 from logging import NullHandler
 
 from sdc.rabbit.consumers import AsyncConsumer, MessageConsumer, TornadoConsumer  # noqa
-from sdc.rabbit.publisher import QueuePublisher  # noqa
+from sdc.rabbit.publishers import ExchangePublisher, QueuePublisher  # noqa
 
 
 logging.getLogger(__name__).addHandler(NullHandler())
