@@ -120,7 +120,7 @@ class TestPublisher(unittest.TestCase):
         with self.assertLogs(level='DEBUG') as cm:
             self.q_publisher._disconnect()
 
-        msg = 'Disconnected from queue'
+        msg = 'Disconnected from rabbit'
         self.assertIn(msg, cm[1][-1])
 
     def test_exchange_connect_amqpok(self):
@@ -133,7 +133,7 @@ class TestPublisher(unittest.TestCase):
         with self.assertLogs(level='DEBUG') as cm:
             self.x_publisher._disconnect()
 
-        msg = 'Disconnected from exchange'
+        msg = 'Disconnected from rabbit'
         self.assertIn(msg, cm[1][-1])
 
     def test_queue_disconnect_already_closed_connection(self):

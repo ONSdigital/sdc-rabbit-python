@@ -8,28 +8,22 @@ from sdc.rabbit.exceptions import PublishMessageError
 logger = logging.getLogger(__name__)
 
 
-class ExchangePublisher(object):
-    """This is an exchange publisher that publishes response messages to a
-    RabbitMQ exchange.
-    """
+class Publisher(object):
+    """Base class for publishers to RabbitMQ."""
 
-    def __init__(self, urls, exchange, exchange_type='fanout', **kwargs):
-        """Create a new instance of the ExchangePublisher class
+    def __init__(self, urls, **kwargs):
+        """Create a new instance of a Publisher class
 
         :param urls: List of RabbitMQ cluster URLs
-        :param exchange: Exchange name
-        :param exchange_type: Type of exchange to declare
         :param confirm_delivery: Delivery confirmations toggle
         :param **kwargs: Custom key/value pairs passed to the arguments
             parameter of pika's channel.exchange_declare method
 
-        :returns: Object of type ExchangePublisher
+        :returns: Object of type Publisher
         :rtype: ExchangePublisher
 
         """
         self._urls = urls
-        self._exchange = exchange
-        self._exchange_type = exchange_type
         self._arguments = kwargs
         self._connection = None
         self._channel = None
@@ -38,54 +32,57 @@ class ExchangePublisher(object):
             self._confirm_delivery = True
             self._arguments.pop('confirm_delivery', None)
 
+    def _declare(self):
+        raise NotImplemented('_declare not implemented')
+
     def _connect(self):
         """
-        Connect to a RabbitMQ exchange
+        Connect to a RabbitMQ instance
 
         :returns: Boolean corresponding to success of connection
         :rtype: bool
 
         """
-        logger.info("Connecting to exchange")
+        logger.info("Connecting to rabbit")
         for url in self._urls:
             try:
                 self._connection = pika.BlockingConnection(pika.URLParameters(url))
                 self._channel = self._connection.channel()
-                self._channel.exchange_declare(exchange=self._exchange,
-                                               exchange_type=self._exchange_type,
-                                               arguments=self._arguments)
+                self._declare()
                 if self._confirm_delivery:
                     self._channel.confirm_delivery()
                     logger.info("Enabled delivery confirmation")
-                logger.debug("Connected to exchange")
+                logger.debug("Connected to rabbit")
                 return True
 
             except pika.exceptions.AMQPConnectionError:
-                logger.exception("Unable to connect to exchange")
+                logger.exception("Unable to connect to rabbit")
                 continue
             except Exception:
-                logger.exception("Unexpected exception connecting to exchange")
+                logger.exception("Unexpected exception connecting to rabbit")
                 continue
 
         raise pika.exceptions.AMQPConnectionError
 
     def _disconnect(self):
         """
-        Cleanly close a RabbitMQ exchange connection.
+        Cleanly close a RabbitMQ connection.
 
         :returns: None
 
         """
         try:
             self._connection.close()
-            logger.debug("Disconnected from exchange")
-
+            logger.debug("Disconnected from rabbit")
         except Exception:
             logger.exception("Unable to close connection")
 
+    def _do_publish(self, message, mandatory=False, immediate=False, content_type=None, headers=None):
+        raise NotImplemented('_do_publish not implemented')
+
     def publish_message(self, message, content_type=None, headers=None, mandatory=False, immediate=False):
         """
-        Publish a response message to a RabbitMQ exchange.
+        Publish a response message to a RabbitMQ instance.
 
         :param message: Response message
         :param content_type: Pika BasicProperties content_type value
@@ -100,19 +97,11 @@ class ExchangePublisher(object):
         logger.debug("Publishing message")
         try:
             self._connect()
-            result = self._channel.basic_publish(exchange=self._exchange,
-                                                 routing_key='',
-                                                 mandatory=mandatory,
-                                                 immediate=immediate,
-                                                 properties=pika.BasicProperties(
-                                                     content_type=content_type,
-                                                     headers=headers,
-                                                     delivery_mode=2
-                                                 ),
-                                                 body=message)
-
-            logger.info('Published message to exchange exchange={}'.format(self._exchange))
-            return result
+            return self._do_publish(mandatory=mandatory,
+                                    immediate=immediate,
+                                    content_type=content_type,
+                                    headers=headers,
+                                    message=message)
         except pika.exceptions.AMQPConnectionError:
             logger.error("AMQPConnectionError occurred. Message not published.")
             raise PublishMessageError
@@ -131,7 +120,50 @@ class ExchangePublisher(object):
             raise PublishMessageError
 
 
-class QueuePublisher(object):
+class ExchangePublisher(Publisher):
+    """This is an exchange publisher that publishes response messages to a
+    RabbitMQ exchange.
+    """
+
+    def __init__(self, urls, exchange, exchange_type='fanout', **kwargs):
+        """Create a new instance of the ExchangePublisher class
+
+        :param urls: List of RabbitMQ cluster URLs
+        :param exchange: Exchange name
+        :param exchange_type: Type of exchange to declare
+        :param confirm_delivery: Delivery confirmations toggle
+        :param **kwargs: Custom key/value pairs passed to the arguments
+            parameter of pika's channel.exchange_declare method
+
+        :returns: Object of type ExchangePublisher
+        :rtype: ExchangePublisher
+
+        """
+        self._exchange = exchange
+        self._exchange_type = exchange_type
+        super(ExchangePublisher, self).__init__(urls, **kwargs)
+
+    def _declare(self):
+        self._channel.exchange_declare(exchange=self._exchange,
+                                       exchange_type=self._exchange_type,
+                                       arguments=self._arguments)
+
+    def _do_publish(self, message, mandatory=False, immediate=False, content_type=None, headers=None):
+        result = self._channel.basic_publish(exchange=self._exchange,
+                                             routing_key='',
+                                             mandatory=mandatory,
+                                             immediate=immediate,
+                                             properties=pika.BasicProperties(
+                                                 content_type=content_type,
+                                                 headers=headers,
+                                                 delivery_mode=2
+                                             ),
+                                             body=message)
+        logger.info('Published message to exchange exchange={}'.format(self._exchange))
+        return result
+
+
+class QueuePublisher(Publisher):
     """This is a queue publisher that publishes response messages to a
     RabbitMQ queue.
 
@@ -151,104 +183,24 @@ class QueuePublisher(object):
         :rtype: QueuePublisher
 
         """
-        self._urls = urls
         self._queue = queue
-        self._arguments = kwargs
-        self._connection = None
-        self._channel = None
-        self._confirm_delivery = False
-        if 'confirm_delivery' in kwargs:
-            self._confirm_delivery = True
-            self._arguments.pop('confirm_delivery', None)
+        super(QueuePublisher, self).__init__(urls, **kwargs)
 
-    def _connect(self):
-        """
-        Connect to a RabbitMQ queue
+    def _declare(self):
+        self._channel.queue_declare(queue=self._queue,
+                                    durable=self._durable_queue,
+                                    arguments=self._arguments)
 
-        :returns: Boolean corresponding to success of connection
-        :rtype: bool
-
-        """
-        logger.info("Connecting to queue")
-        for url in self._urls:
-            try:
-                self._connection = pika.BlockingConnection(pika.URLParameters(url))
-                self._channel = self._connection.channel()
-                self._channel.queue_declare(queue=self._queue,
-                                            durable=self._durable_queue,
-                                            arguments=self._arguments)
-                if self._confirm_delivery:
-                    self._channel.confirm_delivery()
-                    logger.info("Enabled delivery confirmation")
-                logger.debug("Connected to queue")
-                return True
-
-            except pika.exceptions.AMQPConnectionError:
-                logger.exception("Unable to connect to queue")
-                continue
-            except Exception:
-                logger.exception("Unexpected exception connecting to queue")
-                continue
-
-        raise pika.exceptions.AMQPConnectionError
-
-    def _disconnect(self):
-        """
-        Cleanly close a RabbitMQ queue connection.
-
-        :returns: None
-
-        """
-        try:
-            self._connection.close()
-            logger.debug("Disconnected from queue")
-
-        except Exception:
-            logger.exception("Unable to close connection")
-
-    def publish_message(self, message, content_type=None, headers=None, mandatory=False, immediate=False):
-        """
-        Publish a response message to a RabbitMQ queue.
-
-        :param message: Response message
-        :param content_type: Pika BasicProperties content_type value
-        :param headers: Message header properties
-        :param mandatory: The mandatory flag
-        :param immediate: The immediate flag
-
-        :returns: Boolean corresponding to the success of publishing
-        :rtype: bool
-
-        """
-        logger.debug("Publishing message")
-        try:
-            self._connect()
-            result = self._channel.basic_publish(exchange='',
-                                                 routing_key=self._queue,
-                                                 mandatory=mandatory,
-                                                 immediate=immediate,
-                                                 properties=pika.BasicProperties(
-                                                     content_type=content_type,
-                                                     headers=headers,
-                                                     delivery_mode=2
-                                                 ),
-                                                 body=message)
-
-            logger.info('Published message to queue queue={}'.format(self._queue))
-            return result
-        except pika.exceptions.AMQPConnectionError:
-            logger.error("AMQPConnectionError occurred. Message not published.")
-            raise PublishMessageError
-        except NackError:
-            # raised when a message published in publisher-acknowledgments mode
-            # is returned via `Basic.Return` followed by `Basic.Ack`.
-            logger.error("NackError occurred. Message not published.")
-            raise PublishMessageError
-        except UnroutableError:
-            # raised when a message published in publisher-acknowledgments
-            # mode is returned via `Basic.Return` followed by `Basic.Ack`.
-            logger.error("UnroutableError occurred. Message not published.")
-            raise PublishMessageError
-        except Exception:
-            logger.exception("Unknown exception occurred. Message not published.")
-            raise PublishMessageError
+    def _do_publish(self, message, mandatory=False, immediate=False, content_type=None, headers=None):
+        result = self._channel.basic_publish(exchange='',
+                                             routing_key=self._queue,
+                                             mandatory=mandatory,
+                                             immediate=immediate,
+                                             properties=pika.BasicProperties(
+                                                 content_type=content_type,
+                                                 headers=headers,
+                                                 delivery_mode=2
+                                             ),
+                                             body=message)
+        logger.info('Published message to queue queue={}'.format(self._queue))
+        return result
