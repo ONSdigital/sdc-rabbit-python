@@ -111,7 +111,7 @@ class ExchangePublisher(object):
                                                  ),
                                                  body=message)
 
-            logger.info(f'Published message to exchange exchange={self._exchange}')
+            logger.info('Published message to exchange exchange={}'.format(self._exchange))
             return result
         except pika.exceptions.AMQPConnectionError:
             logger.error("AMQPConnectionError occurred. Message not published.")
@@ -234,7 +234,7 @@ class QueuePublisher(object):
                                                  ),
                                                  body=message)
 
-            logger.info(f'Published message to queue queue={self._queue}')
+            logger.info('Published message to queue queue={}'.format(self._queue))
             return result
         except pika.exceptions.AMQPConnectionError:
             logger.error("AMQPConnectionError occurred. Message not published.")
