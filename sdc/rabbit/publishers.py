@@ -33,7 +33,7 @@ class Publisher(object):
             self._arguments.pop('confirm_delivery', None)
 
     def _declare(self):
-        raise NotImplemented('_declare not implemented')
+        raise NotImplementedError('_declare not implemented')
 
     def _connect(self):
         """
@@ -78,7 +78,7 @@ class Publisher(object):
             logger.exception("Unable to close connection")
 
     def _do_publish(self, message, mandatory=False, immediate=False, content_type=None, headers=None):
-        raise NotImplemented('_do_publish not implemented')
+        raise NotImplementedError('_do_publish not implemented')
 
     def publish_message(self, message, content_type=None, headers=None, mandatory=False, immediate=False):
         """

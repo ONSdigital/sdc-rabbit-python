@@ -4,7 +4,7 @@ from unittest import mock
 
 from pika.exceptions import AMQPConnectionError, NackError, UnroutableError
 
-from sdc.rabbit import QueuePublisher, ExchangePublisher
+from sdc.rabbit import ExchangePublisher, QueuePublisher
 from sdc.rabbit.exceptions import PublishMessageError
 from sdc.rabbit.test.test_data import test_data
 
@@ -37,6 +37,21 @@ class TestPublisher(unittest.TestCase):
                                                      'amqp://guest:guest@0.0.0.0:5672'],
                                                      'test',
                                                      confirm_delivery=True)
+
+    def test_incomplete_publisher(self):
+        from sdc.rabbit.publishers import Publisher
+
+        class BadPublisher(Publisher):
+            pass
+
+        this_publisher = BadPublisher(['amqp://guest:guest@0.0.0.0:5672'])
+
+        with self.assertRaises(NotImplementedError):
+            this_publisher._do_publish('test')
+        with self.assertRaises(NotImplementedError):
+            this_publisher._declare()
+        with self.assertRaises(PublishMessageError):
+            this_publisher.publish_message('test')
 
     def test_queue_init(self):
         this_publisher = QueuePublisher(['amqp://guest:guest@0.0.0.0:5672',
