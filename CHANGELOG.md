@@ -1,5 +1,8 @@
 # Unreleased
 
+### 1.5.1 2018-02-09
+ - Hotfix to amend DurableExchangePublisher inheritance
+
 ### 1.5.0 2018-02-09
  - Add additional publisher for handling fanouts to a durable exchange
 
