@@ -165,7 +165,7 @@ class ExchangePublisher(Publisher):
         return result
 
 
-class DurableExchangePublisher(Publisher):
+class DurableExchangePublisher(ExchangePublisher):
     """This is an exchange publisher that publishes response messages to a
     (durable - survives a reboot) RabbitMQ exchange.
     """
