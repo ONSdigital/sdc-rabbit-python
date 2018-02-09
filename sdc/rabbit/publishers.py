@@ -124,6 +124,7 @@ class ExchangePublisher(Publisher):
     """This is an exchange publisher that publishes response messages to a
     RabbitMQ exchange.
     """
+    _durable_exchange = False
 
     def __init__(self, urls, exchange, exchange_type='fanout', **kwargs):
         """Create a new instance of the ExchangePublisher class
@@ -146,6 +147,7 @@ class ExchangePublisher(Publisher):
     def _declare(self):
         self._channel.exchange_declare(exchange=self._exchange,
                                        exchange_type=self._exchange_type,
+                                       durable=self._durable_exchange,
                                        arguments=self._arguments)
 
     def _do_publish(self, message, mandatory=False, immediate=False, content_type=None, headers=None):
@@ -161,6 +163,13 @@ class ExchangePublisher(Publisher):
                                              body=message)
         logger.info('Published message to exchange exchange={}'.format(self._exchange))
         return result
+
+
+class DurableExchangePublisher(Publisher):
+    """This is an exchange publisher that publishes response messages to a
+    (durable - survives a reboot) RabbitMQ exchange.
+    """
+    _durable_exchange = True
 
 
 class QueuePublisher(Publisher):
