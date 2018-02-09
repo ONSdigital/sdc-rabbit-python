@@ -1,5 +1,8 @@
 # Unreleased
 
+### 1.5.0 2018-02-09
+ - Add additional publisher for handling fanouts to a durable exchange
+
 ### 1.4.0 2018-02-08
  - Add additional publisher for handling fanouts to an exchange
 
