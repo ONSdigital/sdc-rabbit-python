@@ -1,4 +1,5 @@
 # Unreleased
+ - Pin version of pika to keep it below 1.X due to interface changes
 
 ### 1.5.2 2019-02-22
  - Relax version requirements of packages
