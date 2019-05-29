@@ -117,7 +117,7 @@ class TestPublisher(unittest.TestCase):
             self.confirm_delivery_queue_publisher._connect()
 
         msg = 'Enabled delivery confirmation'
-        self.assertIn(msg, cm[0][3].msg)
+        self.assertIn(msg, cm.output[8])
 
     def test_exchange_connect_amqp_connection_error(self):
         with self.assertRaises(AMQPConnectionError):
@@ -128,7 +128,7 @@ class TestPublisher(unittest.TestCase):
             self.confirm_delivery_exchange_publisher._connect()
 
         msg = 'Enabled delivery confirmation'
-        self.assertIn(msg, cm[0][3].msg)
+        self.assertIn(msg, cm.output[8])
 
     def test_durable_exchange_connect_amqp_connection_error(self):
         with self.assertRaises(AMQPConnectionError):
@@ -139,7 +139,7 @@ class TestPublisher(unittest.TestCase):
             self.confirm_delivery_durable_exchange_publisher._connect()
 
         msg = 'Enabled delivery confirmation'
-        self.assertIn(msg, cm[0][3].msg)
+        self.assertIn(msg, cm.output[8])
 
     def test_queue_connect_amqpok(self):
         result = self.queue_publisher._connect()
@@ -187,7 +187,7 @@ class TestPublisher(unittest.TestCase):
             self.queue_publisher._disconnect()
 
         msg = 'Close called on closed connection'
-        self.assertIn(msg, cm.output[0])
+        self.assertIn(msg, cm.output[1])
 
     def test_exchange_disconnect_already_closed_connection(self):
         self.exchange_publisher._connect()
@@ -196,7 +196,7 @@ class TestPublisher(unittest.TestCase):
             self.exchange_publisher._disconnect()
 
         msg = 'Close called on closed connection'
-        self.assertIn(msg, cm.output[0])
+        self.assertIn(msg, cm.output[1])
 
     def test_durable_exchange_disconnect_already_closed_connection(self):
         self.durable_exchange_publisher._connect()
@@ -205,18 +205,22 @@ class TestPublisher(unittest.TestCase):
             self.durable_exchange_publisher._disconnect()
 
         msg = 'Close called on closed connection'
-        self.assertIn(msg, cm.output[0])
+        self.assertIn(msg, cm.output[1])
 
     def test_queue_publish_message_no_connection(self):
         with self.assertRaises(PublishMessageError):
             self.bad_queue_publisher.publish_message(test_data['valid'])
 
     def test_queue_publish(self):
+        """Test that when a message is successfully published, a result of True is given and
+        the correct messages are logged.
+        """
         self.queue_publisher._connect()
         with self.assertLogs(level='INFO') as cm:
             result = self.queue_publisher.publish_message(test_data['valid'])
             self.assertEqual(True, result)
-        self.assertIn('Published message to queue', cm.output[3])
+
+        self.assertIn('Published message to queue', cm.output[8])
 
     def test_queue_publish_nack_error(self):
         mock_method = 'pika.adapters.blocking_connection.BlockingChannel.basic_publish'
@@ -247,11 +251,15 @@ class TestPublisher(unittest.TestCase):
             self.bad_exchange_publisher.publish_message(test_data['valid'])
 
     def test_exchange_publish(self):
+        """Test that when a message is successfully published, a result of True is given and
+        the correct messages are logged.
+        """
         self.exchange_publisher._connect()
         with self.assertLogs(level='INFO') as cm:
             result = self.exchange_publisher.publish_message(test_data['valid'])
             self.assertEqual(True, result)
-        self.assertIn('Published message to exchange', cm.output[3])
+
+        self.assertIn('Published message to exchange', cm.output[8])
 
     def test_exchange_publish_nack_error(self):
         mock_method = 'pika.adapters.blocking_connection.BlockingChannel.basic_publish'
@@ -282,11 +290,15 @@ class TestPublisher(unittest.TestCase):
             self.bad_durable_exchange_publisher.publish_message(test_data['valid'])
 
     def test_durable_exchange_publish(self):
+        """Test that when a message is successfully published, a result of True is given and
+        the correct messages are logged.
+        """
         self.durable_exchange_publisher._connect()
         with self.assertLogs(level='INFO') as cm:
             result = self.durable_exchange_publisher.publish_message(test_data['valid'])
             self.assertEqual(True, result)
-        self.assertIn('Published message to exchange', cm.output[3])
+
+        self.assertIn('Published message to exchange', cm.output[8])
 
     def test_durable_exchange_publish_nack_error(self):
         mock_method = 'pika.adapters.blocking_connection.BlockingChannel.basic_publish'

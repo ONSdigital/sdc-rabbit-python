@@ -1,11 +1,12 @@
 import logging
 
 import pika
-from pika.exceptions import NackError, UnroutableError
+from pika.exceptions import ConnectionWrongStateError, NackError, UnroutableError
+from structlog import wrap_logger
 
 from sdc.rabbit.exceptions import PublishMessageError
 
-logger = logging.getLogger(__name__)
+logger = wrap_logger(logging.getLogger(__name__))
 
 
 class Publisher(object):
@@ -74,13 +75,15 @@ class Publisher(object):
         try:
             self._connection.close()
             logger.debug("Disconnected from rabbit")
+        except ConnectionWrongStateError:
+            logger.exception("Close called on closed connection")
         except Exception:
             logger.exception("Unable to close connection")
 
-    def _do_publish(self, message, mandatory=False, immediate=False, content_type=None, headers=None):
+    def _do_publish(self, message, mandatory=False, content_type=None, headers=None):
         raise NotImplementedError('_do_publish not implemented')
 
-    def publish_message(self, message, content_type=None, headers=None, mandatory=False, immediate=False):
+    def publish_message(self, message, content_type=None, headers=None, mandatory=False):
         """
         Publish a response message to a RabbitMQ instance.
 
@@ -88,7 +91,6 @@ class Publisher(object):
         :param content_type: Pika BasicProperties content_type value
         :param headers: Message header properties
         :param mandatory: The mandatory flag
-        :param immediate: The immediate flag
 
         :returns: Boolean corresponding to the success of publishing
         :rtype: bool
@@ -97,11 +99,11 @@ class Publisher(object):
         logger.debug("Publishing message")
         try:
             self._connect()
-            return self._do_publish(mandatory=mandatory,
-                                    immediate=immediate,
-                                    content_type=content_type,
-                                    headers=headers,
-                                    message=message)
+            self._do_publish(mandatory=mandatory,
+                             content_type=content_type,
+                             headers=headers,
+                             message=message)
+            return True
         except pika.exceptions.AMQPConnectionError:
             logger.error("AMQPConnectionError occurred. Message not published.")
             raise PublishMessageError
@@ -150,19 +152,17 @@ class ExchangePublisher(Publisher):
                                        durable=self._durable_exchange,
                                        arguments=self._arguments)
 
-    def _do_publish(self, message, mandatory=False, immediate=False, content_type=None, headers=None):
-        result = self._channel.basic_publish(exchange=self._exchange,
-                                             routing_key='',
-                                             mandatory=mandatory,
-                                             immediate=immediate,
-                                             properties=pika.BasicProperties(
-                                                 content_type=content_type,
-                                                 headers=headers,
-                                                 delivery_mode=2
-                                             ),
-                                             body=message)
-        logger.info('Published message to exchange exchange={}'.format(self._exchange))
-        return result
+    def _do_publish(self, message, mandatory=False, content_type=None, headers=None):
+        self._channel.basic_publish(exchange=self._exchange,
+                                    routing_key='',
+                                    mandatory=mandatory,
+                                    properties=pika.BasicProperties(
+                                        content_type=content_type,
+                                        headers=headers,
+                                        delivery_mode=2
+                                    ),
+                                    body=message)
+        logger.info('Published message to exchange', exchange=self._exchange)
 
 
 class DurableExchangePublisher(ExchangePublisher):
@@ -200,16 +200,14 @@ class QueuePublisher(Publisher):
                                     durable=self._durable_queue,
                                     arguments=self._arguments)
 
-    def _do_publish(self, message, mandatory=False, immediate=False, content_type=None, headers=None):
-        result = self._channel.basic_publish(exchange='',
-                                             routing_key=self._queue,
-                                             mandatory=mandatory,
-                                             immediate=immediate,
-                                             properties=pika.BasicProperties(
-                                                 content_type=content_type,
-                                                 headers=headers,
-                                                 delivery_mode=2
-                                             ),
-                                             body=message)
-        logger.info('Published message to queue queue={}'.format(self._queue))
-        return result
+    def _do_publish(self, message, mandatory=False, content_type=None, headers=None):
+        self._channel.basic_publish(exchange='',
+                                    routing_key=self._queue,
+                                    mandatory=mandatory,
+                                    properties=pika.BasicProperties(
+                                        content_type=content_type,
+                                        headers=headers,
+                                        delivery_mode=2
+                                    ),
+                                    body=message)
+        logger.info('Published message to queue', queue=self._queue)

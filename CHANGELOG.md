@@ -1,4 +1,5 @@
 # Unreleased
+ - Upgrade Pika to version 1.X.  Due to interface changes, it's no longer possible to use Pika 0.X
 
 ### 1.5.3 2019-05-24
  - Pin version of pika to keep it below 1.X due to interface changes
