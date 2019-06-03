@@ -93,14 +93,6 @@ class AsyncConsumer:
         logger.info('Closing connection')
         self._connection.close()
 
-    def add_on_connection_close_callback(self):
-        """This method adds an on close callback that will be invoked by pika
-        when RabbitMQ closes the connection to the publisher unexpectedly.
-
-        """
-        logger.info('Adding connection close callback')
-        self._connection.add_on_close_callback(self.on_connection_closed)
-
     def on_connection_open(self, unused_connection):
         """This method is called by pika once the connection to RabbitMQ has
         been established. It passes the handle to the connection object in
@@ -110,7 +102,6 @@ class AsyncConsumer:
 
         """
         logger.info('Connection opened')
-        self.add_on_connection_close_callback()
         self.open_channel()
 
     def on_connection_open_error(self, _unused_connection, error):
@@ -415,7 +406,9 @@ class TornadoConsumer(AsyncConsumer):
             try:
                 logger.info('Connecting', attempt=count)
                 return TornadoConnection(pika.URLParameters(self._url),
-                                         self.on_connection_open)
+                                         on_open_callback=self.on_connection_open,
+                                         on_open_error_callback=self.on_connection_open_error,
+                                         on_close_callback=self.on_connection_closed)
             except pika.exceptions.AMQPConnectionError:
                 logger.exception("Connection error")
                 count += 1
