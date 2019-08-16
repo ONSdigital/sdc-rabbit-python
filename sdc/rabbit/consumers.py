@@ -54,6 +54,7 @@ class AsyncConsumer:
         self._closing = False
         self._consumer_tag = None
         self._url = None
+        self._count = 1
 
     def connect(self):
         """This method connects to RabbitMQ using a SelectConnection object,
@@ -66,26 +67,22 @@ class AsyncConsumer:
 
         """
 
-        count = 1
         no_of_servers = len(self._rabbit_urls)
 
         while True:
-            server_choice = (count % no_of_servers) - 1
+            server_choice = (self._count % no_of_servers) - 1
 
             self._url = self._rabbit_urls[server_choice]
 
             try:
-                logger.info('Connecting', attempt=count)
+                logger.info('Connecting', attempt=self._count)
                 return pika.SelectConnection(pika.URLParameters(self._url),
                                              on_open_callback=self.on_connection_open,
                                              on_open_error_callback=self.on_connection_open_error,
                                              on_close_callback=self.on_connection_closed)
             except pika.exceptions.AMQPConnectionError:
                 logger.exception("Connection error")
-                count += 1
-                logger.error("Connection sleep", no_of_seconds=count)
-                time.sleep(count)
-
+                self._delay_before_reconnect()
                 continue
 
     def close_connection(self):
@@ -102,6 +99,7 @@ class AsyncConsumer:
 
         """
         logger.info('Connection opened')
+        self._count = 1  # Reset count on successful connection
         self.open_channel()
 
     def on_connection_open_error(self, _unused_connection, error):
@@ -123,6 +121,7 @@ class AsyncConsumer:
         """
         self._channel = None
         if self._closing:
+            logger.warning("Connection closed, stopping ioloop", reason=reason)
             self._connection.ioloop.stop()
         else:
             logger.warning('Connection closed, reconnect necessary', reason=reason)
@@ -133,12 +132,13 @@ class AsyncConsumer:
         closed. See the on_connection_closed method.
 
         """
+        self._delay_before_reconnect()
+        logger.info("Reconnecting", is_closing=self._closing)
         if not self._closing:
-
             # Create a new connection
-            # The ioloop may be stopped in self._connection._handle_ioloop_stop()
-            # depending on the value of 'stop_ioloop_on_close'
             self._connection = self.connect()
+        else:
+            logger.info("Connection is still closing, cannot reconnect", is_closing=self._closing)
 
     def open_channel(self):
         """Open a new channel with RabbitMQ by issuing the Channel.Open RPC
@@ -383,8 +383,19 @@ class AsyncConsumer:
         self.stop_consuming()
         logger.info('Stopped')
 
+    def _delay_before_reconnect(self):
+        """Sleeps for a number of seconds equal to the `count` attribute on this object
+        """
+        logger.info("Sleeping before reconnect", no_of_seconds=self._count)
+        time.sleep(self._count)
+        self._count += 1
+        logger.info("Finished sleeping")
+
 
 class TornadoConsumer(AsyncConsumer):
+    """This is a consumer that uses the AsyncConsumer as a base but uses TornadoConnection
+    to connect to RabbitMQ
+    """
     def connect(self):
         """This method connects to RabbitMQ using a TornadoConnection object,
         returning the connection handle.
@@ -392,30 +403,53 @@ class TornadoConsumer(AsyncConsumer):
         When the connection is established, the on_connection_open method
         will be invoked by pika.
 
-        :rtype: pika.SelectConnection
+        :rtype: pika.adapters.TornadoConnection
 
         """
-        count = 1
         no_of_servers = len(self._rabbit_urls)
 
         while True:
-            server_choice = (count % no_of_servers) - 1
+            server_choice = (self._count % no_of_servers) - 1
 
             self._url = self._rabbit_urls[server_choice]
 
             try:
-                logger.info('Connecting', attempt=count)
+                logger.info('Connecting', attempt=self._count)
                 return TornadoConnection(pika.URLParameters(self._url),
                                          on_open_callback=self.on_connection_open,
                                          on_open_error_callback=self.on_connection_open_error,
                                          on_close_callback=self.on_connection_closed)
             except pika.exceptions.AMQPConnectionError:
                 logger.exception("Connection error")
-                count += 1
-                logger.error("Connection sleep", no_of_seconds=count)
-                time.sleep(count)
+                self._delay_before_reconnect()
 
                 continue
+
+    def close_connection(self):
+        """This method closes the connection to RabbitMQ."""
+        if self._connection.is_closing or self._connection.is_closed:
+            logger.info('Connection is closing or already closed', state=self._connection.connection_state)
+        else:
+            logger.info('Closing connection', state=self._connection.connection_state)
+            self._connection.close()
+
+    def on_connection_closed(self, _unused_connection, reason):
+        """This method is invoked by pika when the connection to RabbitMQ is
+        closed unexpectedly. Since it is unexpected, we will reconnect to
+        RabbitMQ if it disconnects.
+
+        :param pika.connection.Connection _unused_connection: The closed connection obj
+        :param Exception reason: exception representing reason for loss of
+            connection.
+
+        """
+        self._channel = None
+        if self._closing:
+            logger.warning("Connection closed, stopping ioloop", reason=reason)
+            self._connection.ioloop.stop()
+        else:
+            logger.warning('Connection closed, reopening in 3 seconds', reason=reason)
+            self._connection.ioloop.call_later(3, self.reconnect)
 
 
 class MessageConsumer(TornadoConsumer):

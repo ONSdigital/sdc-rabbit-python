@@ -1,5 +1,8 @@
 # Unreleased
-
+ - Fix reconnection when using a TornadoConsumer or anything that inherits from it
+ - Fix backup url functionality
+ - Fix backoff timing for repeated connection retries
+ 
 ### 1.6.0 2019-06-04
  - Upgrade Pika to version 1.X.  Due to interface changes, it's no longer possible to use Pika 0.X
 
