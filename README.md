@@ -15,39 +15,39 @@ To install, use `pip install sdc-rabbit`.
 
 Assuming you are executing from inside an activated virtual environment:
 
-### Install requirements:
+### Install requirements
 
-```
-$ make install
+```bash
+make install
 ```
 
-### Run the unit tests:
+### Run the unit tests
 
 In order to run the tests you will need a copy of rabbitmq running.  The easiest way of doing this is with docker with the following command:
 
-```
+```bash
 docker run -d -p 5672:5672 rabbitmq:3-management
 ```
 
 then to run the tests, just do:
 
-```
-$ make test
+```bash
+make test
 ```
 
-#### Create a package for deployment:
+#### Create a package for deployment
 
-```
-$ make dist
+```bash
+make dist
 ```
 
 #### Test package locally
 
 Inside of a virtual environment, this can be installed from git with the following command:
-```
+
+```bash
 pip install git+git://github.com/ONSDigital/sdc-rabbit.git@<branch-name-here>#egg=sdc-rabbit
 ```
-
 
 ## PyPi
 
