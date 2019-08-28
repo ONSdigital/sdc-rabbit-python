@@ -547,17 +547,13 @@ class MessageConsumer(TornadoConsumer):
                             app_id=properties.app_id,
                             tx_id=tx_id)
 
-            except KeyError as e:
+            except KeyError:
                 self.reject_message(basic_deliver.delivery_tag)
-                logger.error("Bad message properties - no tx_id",
-                             action="rejected",
-                             exception=str(e))
+                logger.exception("Bad message properties - no tx_id", action="rejected")
                 return None
-            except TypeError as e:
+            except TypeError:
                 self.reject_message(basic_deliver.delivery_tag)
-                logger.error("Bad message properties - no headers",
-                             action="rejected",
-                             exception=str(e))
+                logger.exception("Bad message properties - no headers", action="rejected")
                 return None
         else:
             logger.debug("check_tx_id is False. Not checking tx_id for message.",
@@ -574,30 +570,21 @@ class MessageConsumer(TornadoConsumer):
             self.acknowledge_message(basic_deliver.delivery_tag,
                                      tx_id=tx_id)
 
-        except (QuarantinableError, BadMessageError) as e:
+        except (QuarantinableError, BadMessageError):
             # Throw it into the quarantine queue to be dealt with
             try:
                 self.quarantine_publisher.publish_message(body, headers={'tx_id': tx_id})
                 self.reject_message(basic_deliver.delivery_tag, tx_id=tx_id)
-                logger.error("Quarantinable error occured",
-                             action="quarantined",
-                             exception=str(e),
-                             tx_id=tx_id)
+                logger.exception("Quarantinable error occured", action="quarantined", tx_id=tx_id)
             except PublishMessageError:
                 logger.error("Unable to publish message to quarantine queue. Rejecting message and requeuing.")
-                self.reject_message(basic_deliver.delivery_tag,
-                                    requeue=True,
-                                    tx_id=tx_id)
+                self.reject_message(basic_deliver.delivery_tag, requeue=True, tx_id=tx_id)
 
         except RetryableError:
             self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
-            logger.exception("Failed to process",
+            logger.exception("Failed to process", action="nack", tx_id=tx_id)
+        except Exception:
+            self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
+            logger.exception("Unexpected exception occurred, failed to process",
                              action="nack",
                              tx_id=tx_id)
-        except Exception as e:
-            self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
-            logger.exception("Unexpected exception occurred")
-            logger.error("Failed to process",
-                         action="nack",
-                         exception=str(e),
-                         tx_id=tx_id)

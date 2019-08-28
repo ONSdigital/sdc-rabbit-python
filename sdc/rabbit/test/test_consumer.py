@@ -38,6 +38,8 @@ class TestSdxConsumer(unittest.TestCase):
         self.body = json.loads('"{test message}"')
 
     def test_callable(self):
+        """The final argument of the message consumer is a callable function for it to run.
+        Not providing it with something callable raises an AttributeError"""
         with self.assertRaises(AttributeError):
             self.consumer = MessageConsumer(True,
                                             'test',
@@ -48,6 +50,8 @@ class TestSdxConsumer(unittest.TestCase):
                                             self.body)
 
     def test_queue_attributes(self):
+        """Checks the values of the consumers private variables are as expected"""
+        self.assertEqual(self.consumer._count, 1)
         self.assertEqual(self.consumer._exchange, 'test')
         self.assertEqual(self.consumer._exchange_type, 'topic')
         self.assertEqual(self.consumer._queue, 'test')
@@ -73,44 +77,38 @@ class TestSdxConsumer(unittest.TestCase):
         mock_method = 'sdc.rabbit.AsyncConsumer.reject_message'
         with mock.patch(mock_method) as barMock:
             barMock.return_value = None
-            result = self.consumer.on_message(self.consumer._channel,
-                                              self.basic_deliver,
-                                              self.props_no_tx_id,
-                                              'test')
-
-        self.assertEqual(result, None)
+            self.consumer.on_message(self.consumer._channel,
+                                     self.basic_deliver,
+                                     self.props_no_tx_id,
+                                     'test')
 
     def test_on_message_headers_type_error_returns_none(self):
         mock_method = 'sdc.rabbit.AsyncConsumer.reject_message'
         with mock.patch(mock_method) as barMock:
             barMock.return_value = None
-            result = self.consumer.on_message(self.consumer._channel,
-                                              self.basic_deliver,
-                                              self.props_no_headers,
-                                              'test'.encode())
-
-        self.assertEqual(result, None)
+            self.consumer.on_message(self.consumer._channel,
+                                     self.basic_deliver,
+                                     self.props_no_headers,
+                                     'test'.encode())
 
     def test_on_message_logger(self):
         mock_method = 'sdc.rabbit.AsyncConsumer.acknowledge_message'
         with mock.patch(mock_method) as bar_mock:
             bar_mock.return_value = None
-            result = self.consumer.on_message(self.consumer._channel,
-                                              self.basic_deliver,
-                                              self.props,
-                                              self.body.encode('UTF-8'))
-            self.assertEqual(None, result)
+            self.consumer.on_message(self.consumer._channel,
+                                     self.basic_deliver,
+                                     self.props,
+                                     self.body.encode('UTF-8'))
 
     def test_on_message_quarantinable_error(self):
         mock_method = 'sdc.rabbit.AsyncConsumer.reject_message'
         with mock.patch(mock_method):
             self.consumer.process = lambda x: (_ for _ in ()).throw(QuarantinableError())
             with self.assertLogs(level='ERROR') as cm:
-                result = self.consumer.on_message(self.consumer._channel,
-                                                  self.basic_deliver,
-                                                  self.props,
-                                                  self.body.encode('UTF-8'))
-        self.assertEqual(result, None)
+                self.consumer.on_message(self.consumer._channel,
+                                         self.basic_deliver,
+                                         self.props,
+                                         self.body.encode('UTF-8'))
         self.assertIn("Quarantinable error occured", cm[0][1].message)
 
     def test_on_message_publish_message_error(self):
@@ -121,11 +119,10 @@ class TestSdxConsumer(unittest.TestCase):
             with mock.patch(mock_publish_message) as publish_mock:
                 publish_mock.side_effect = PublishMessageError
                 with self.assertLogs(level='ERROR') as cm:
-                    result = self.consumer.on_message(self.consumer._channel,
-                                                      self.basic_deliver,
-                                                      self.props,
-                                                      self.body.encode('UTF-8'))
-        self.assertEqual(result, None)
+                    self.consumer.on_message(self.consumer._channel,
+                                             self.basic_deliver,
+                                             self.props,
+                                             self.body.encode('UTF-8'))
 
         expected_msg = "Unable to publish message to quarantine queue. Rejecting message and requeuing."
         self.assertIn(expected_msg, cm[0][1].message)
@@ -139,14 +136,15 @@ class TestSdxConsumer(unittest.TestCase):
         with mock.patch(mock_method):
             self.consumer.process = bad_message_error
             with self.assertLogs(level='ERROR') as cm:
-                result = self.consumer.on_message(self.consumer._channel,
-                                                  self.basic_deliver,
-                                                  self.props,
-                                                  self.body.encode('UTF-8'))
-        self.assertEqual(result, None)
+                self.consumer.on_message(self.consumer._channel,
+                                         self.basic_deliver,
+                                         self.props,
+                                         self.body.encode('UTF-8'))
         self.assertIn("Quarantinable error occured", cm[0][0].message)
 
     def test_on_message_retryable_message_error(self):
+        """If a retryable error is thrown then a log line with a nack will
+        be logged out"""
         mock_method = 'sdc.rabbit.AsyncConsumer.nack_message'
 
         def retryable_error(x, y):
@@ -155,15 +153,17 @@ class TestSdxConsumer(unittest.TestCase):
         with mock.patch(mock_method):
             self.consumer.process = retryable_error
             with self.assertLogs(level='ERROR') as cm:
-                result = self.consumer.on_message(self.consumer._channel,
-                                                  self.basic_deliver,
-                                                  self.props,
-                                                  self.body.encode('UTF-8'))
-        self.assertEqual(result, None)
+                self.consumer.on_message(self.consumer._channel,
+                                         self.basic_deliver,
+                                         self.props,
+                                         self.body.encode('UTF-8'))
 
         self.assertIn("Failed to process", cm[0][0].message)
+        self.assertIn("action=nack", cm[0][0].message)
 
     def test_on_message_generic_exception_caught_and_nacked(self):
+        """If an unexpected exception is thrown (one we haven't caught specifically),
+        then we log out that something unexpected has happened and nack it"""
         mock_method = 'sdc.rabbit.AsyncConsumer.nack_message'
 
         def exception_error(x, y):
@@ -172,12 +172,12 @@ class TestSdxConsumer(unittest.TestCase):
         with mock.patch(mock_method) as mocker:
             self.consumer.process = exception_error
             with self.assertLogs(level='ERROR') as cm:
-                result = self.consumer.on_message(self.consumer._channel,
-                                                  self.basic_deliver,
-                                                  self.props,
-                                                  self.body.encode('UTF-8'))
-            self.assertEqual(result, None)
+                self.consumer.on_message(self.consumer._channel,
+                                         self.basic_deliver,
+                                         self.props,
+                                         self.body.encode('UTF-8'))
             mocker.assert_called_with(self.basic_deliver.delivery_tag,
                                       tx_id='test')
 
-            self.assertIn("Unexpected exception occurred", cm[0][0].message)
+            self.assertIn("Unexpected exception occurred, failed to process", cm[0][0].message)
+            self.assertIn("action=nack", cm[0][0].message)
