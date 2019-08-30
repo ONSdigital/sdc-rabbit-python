@@ -389,7 +389,6 @@ class AsyncConsumer:
         logger.info("Sleeping before reconnect", no_of_seconds=self._count)
         time.sleep(self._count)
         self._count += 1
-        logger.info("Finished sleeping")
 
 
 class TornadoConsumer(AsyncConsumer):
